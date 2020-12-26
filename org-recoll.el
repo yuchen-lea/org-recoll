@@ -25,6 +25,11 @@
 
 ;; Public Variables
 
+(defface org-recoll-highlight
+  '((t :weight bold :slant italic :foreground "gold1"))
+  "Face for org-recoll search query."
+  :group 'org-recoll)
+
 (defcustom org-recoll-results-num 10
   "This is the number of results to be displayed per page.
 High numbers will reduce responsiveness.  It's set to 10 by
@@ -269,7 +274,7 @@ doc-view (where isearch doesn't work."
   (goto-char (point-min))
   (org-recoll-fill-region-paragraphs)
   ;; Add emphasis
-  (highlight-phrase (org-recoll-reformat-for-file-search org-recoll-search-query) 'bold-italic))
+  (highlight-phrase (org-recoll-reformat-for-file-search org-recoll-search-query) 'org-recoll-highlight))
 
 
 (defun org-recoll-recollq-to-org (squery &optional paging)
