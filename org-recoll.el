@@ -271,14 +271,26 @@ doc-view (where isearch doesn't work."
     (while (re-search-forward "\\[file://\\(.*\\)\\][[:blank:]]*\\[\\([^\]]*\\).*" nil t)
       (setq file-path (buffer-substring (match-beginning 1) (match-end 1)))
       (setq section (buffer-substring (match-beginning 2) (match-end 2)))
-      (setq title (shell-command-to-string (concat "exiftool -T -Title '" file-path "'")))
-      (setq title (replace-regexp-in-string "\n" "" title))
+      (setq title (org-recoll-get-file-title file-path))
       (replace-match (concat "[[file://" file-path "]["
                              title "." (file-name-extension file-path) "]] "
                              section))
       )
     )
   )
+
+
+(defun org-recoll-get-file-title (file-path)
+  "Get title from file metadata by exiftool."
+  (let* (title)
+    (setq title (shell-command-to-string (concat "exiftool -T -Title '" file-path "'")))
+    (if (string= title "-\n")
+        (setq title (shell-command-to-string (concat "exiftool -T -MetadataTitle '" file-path "'")))
+      )
+    (setq title (replace-regexp-in-string "\n" "" title))
+    )
+  )
+
 
 (defun org-recoll-format-results ()
   "Format recoll results in buffer."
