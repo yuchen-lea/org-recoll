@@ -87,6 +87,12 @@ deleting/editing parts of your research library."
   :group 'org-recoll
   :type 'boolean)
 
+(defcustom org-recoll-extract-title-from-metadata nil
+  "Toggle whether extract file title from file metadata.
+Require exiftool to be installed.
+"
+  :group 'org-recoll
+  :type 'boolean)
 ;; Internal Variables
 
 (defvar org-recoll-end-of-current-page org-recoll-results-num)
@@ -257,11 +263,33 @@ doc-view (where isearch doesn't work."
   )
 
 
+(defun org-recoll-format-link-from-metadata ()
+  "Format links in org format:
+[[file-path (from recoll)][title (from metadata)]] section (from recoll)"
+  (let* (file-path section title)
+    (goto-char (point-min))
+    (while (re-search-forward "\\[file://\\([^\]]*\\)\\][[:blank:]]*\\[\\([^\]]*\\).*" nil t)
+      (setq file-path (buffer-substring (match-beginning 1) (match-end 1)))
+      (setq section (buffer-substring (match-beginning 2) (match-end 2)))
+      (setq title (shell-command-to-string (concat "exiftool -T -Title '" file-path "'")))
+      (setq title (replace-regexp-in-string "\n" "" title))
+      (replace-match (concat "[[file://" file-path "]["
+                             title "." (file-name-extension file-path) "]] "
+                             section))
+      )
+    )
+  )
+
 (defun org-recoll-format-results ()
   "Format recoll results in buffer."
   ;; Format results in org format and tidy up
-  (org-recoll-regexp-replace-in-buffer "\\[\\(.*\\)" "[[\\1")
-  (org-recoll-regexp-replace-in-buffer "\\]\\(.*\\)" "-link")
+  (if org-recoll-extract-title-from-metadata
+      (org-recoll-format-link-from-metadata)
+    (progn
+      (org-recoll-regexp-replace-in-buffer "\\[\\(.*\\)" "[[\\1")
+      (org-recoll-regexp-replace-in-buffer "\\]\\(.*\\)" "-link")
+      )
+    )
   (org-recoll-regexp-replace-in-buffer "text\\/" "* ")
   (org-recoll-regexp-replace-in-buffer "inode\\/" "* ")
   (org-recoll-regexp-replace-in-buffer "message\\/rfc822" "* e-mail")
@@ -269,7 +297,9 @@ doc-view (where isearch doesn't work."
   (org-recoll-regexp-replace-in-buffer "application\\/" "* ")
   (org-recoll-regexp-replace-in-buffer "\\/ABSTRACT" "")
   (org-recoll-regexp-replace-in-buffer "ABSTRACT" "")
-  (org-recoll-regexp-replace-in-buffer "\\/\\([^\\/]*\\)-link" "/\\1][\\1]]")
+  (if (not org-recoll-extract-title-from-metadata)
+      (org-recoll-regexp-replace-in-buffer "\\/\\([^\\/]*\\)-link" "/\\1][\\1]]")
+    )
   ;; Justify results
   (goto-char (point-min))
   (org-recoll-fill-region-paragraphs)
