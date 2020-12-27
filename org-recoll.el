@@ -268,7 +268,7 @@ doc-view (where isearch doesn't work."
 [[file-path (from recoll)][title (from metadata)]] section (from recoll)"
   (let* (file-path section title)
     (goto-char (point-min))
-    (while (re-search-forward "\\[file://\\([^\]]*\\)\\][[:blank:]]*\\[\\([^\]]*\\).*" nil t)
+    (while (re-search-forward "\\[file://\\(.*\\)\\][[:blank:]]*\\[\\([^\]]*\\).*" nil t)
       (setq file-path (buffer-substring (match-beginning 1) (match-end 1)))
       (setq section (buffer-substring (match-beginning 2) (match-end 2)))
       (setq title (shell-command-to-string (concat "exiftool -T -Title '" file-path "'")))
