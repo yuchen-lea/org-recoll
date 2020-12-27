@@ -263,18 +263,27 @@ doc-view (where isearch doesn't work."
   )
 
 
-(defun org-recoll-format-link-from-metadata ()
+(defun org-recoll-format-links ()
   "Format links in org format:
-[[file-path (from recoll)][title (from metadata)]] section (from recoll)"
+When org-recoll-extract-title-from-metadata is t:
+[[file-path (from recoll)][title (from metadata)]] section (from recoll)
+Else:
+[[file-path (from recoll)][file-name (from recoll)]]"
   (let* (file-path section title)
     (goto-char (point-min))
     (while (re-search-forward "\\[file://\\(.*\\)\\][[:blank:]]*\\[\\([^\]]*\\).*" nil t)
       (setq file-path (buffer-substring (match-beginning 1) (match-end 1)))
-      (setq section (buffer-substring (match-beginning 2) (match-end 2)))
-      (setq title (org-recoll-get-file-title file-path))
-      (replace-match (concat "[[file://" file-path "]["
-                             title "." (file-name-extension file-path) "]] "
-                             section))
+      (if org-recoll-extract-title-from-metadata
+          (progn
+            (setq section (buffer-substring (match-beginning 2) (match-end 2)))
+            (setq title (org-recoll-get-file-title file-path))
+            (replace-match (concat "[[file://" file-path "]["
+                                   title "." (file-name-extension file-path) "]] "
+                                   section))
+            )
+          (replace-match (concat "[[file://" file-path "]["
+                                 (file-name-nondirectory file-path) "]] "))
+        )
       )
     )
   )
@@ -295,13 +304,7 @@ doc-view (where isearch doesn't work."
 (defun org-recoll-format-results ()
   "Format recoll results in buffer."
   ;; Format results in org format and tidy up
-  (if org-recoll-extract-title-from-metadata
-      (org-recoll-format-link-from-metadata)
-    (progn
-      (org-recoll-regexp-replace-in-buffer "\\[\\(.*\\)" "[[\\1")
-      (org-recoll-regexp-replace-in-buffer "\\]\\(.*\\)" "-link")
-      )
-    )
+  (org-recoll-format-links)
   (org-recoll-regexp-replace-in-buffer "text\\/" "* ")
   (org-recoll-regexp-replace-in-buffer "inode\\/" "* ")
   (org-recoll-regexp-replace-in-buffer "message\\/rfc822" "* e-mail")
@@ -309,9 +312,6 @@ doc-view (where isearch doesn't work."
   (org-recoll-regexp-replace-in-buffer "application\\/" "* ")
   (org-recoll-regexp-replace-in-buffer "\\/ABSTRACT" "")
   (org-recoll-regexp-replace-in-buffer "ABSTRACT" "")
-  (if (not org-recoll-extract-title-from-metadata)
-      (org-recoll-regexp-replace-in-buffer "\\/\\([^\\/]*\\)-link" "/\\1][\\1]]")
-    )
   ;; Justify results
   (goto-char (point-min))
   (org-recoll-fill-region-paragraphs)
